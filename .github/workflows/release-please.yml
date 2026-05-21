@@ -21,7 +21,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Reformat CHANGELOG headings for Craft Plugin Store
+      - name: Post-process CHANGELOG for Craft Plugin Store
         if: ${{ steps.release.outputs.pr }}
         env:
           RELEASE_PR_JSON: ${{ steps.release.outputs.pr }}
@@ -31,9 +31,25 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin "$PR_BRANCH"
           git checkout "$PR_BRANCH"
+
+          # 1. Reformat dates: parens → hyphen (Craft Plugin Store requires this format)
           sed -i -E '/^## /s/ \(([0-9.-]+)\)$/ - \1/' CHANGELOG.md
+
+          # 2. Append [CRITICAL] if the top entry contains "Severity: critical" footer
+          TOP_ENTRY=$(awk '
+            /^## \[?[0-9]/ {
+              if (count == 0) { count = 1; next }
+              if (count == 1) exit
+            }
+            count == 1 { print }
+          ' CHANGELOG.md)
+
+          if echo "$TOP_ENTRY" | grep -qi "Severity: critical" && ! head -20 CHANGELOG.md | grep -q '\[CRITICAL\]'; then
+            sed -i -E '0,/^(## .+ - [0-9.-]+)$/ s//\1 [CRITICAL]/' CHANGELOG.md
+          fi
+
           if ! git diff --quiet CHANGELOG.md; then
             git add CHANGELOG.md
-            git commit -m "chore: reformat CHANGELOG date for Craft Plugin Store"
+            git commit -m "chore: post-process CHANGELOG for Craft Plugin Store"
             git push origin "$PR_BRANCH"
           fi
