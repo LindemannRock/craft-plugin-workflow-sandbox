@@ -1,1 +1,30 @@
-# Release Notes for Release-Please Test
+# Changelog
+
+## [1.1.0](https://github.com/LindemannRock/craft-release-please-test/compare/v1.0.0...v1.1.0) (2026-05-21)
+
+
+### Added
+
+* add hello world greeter ([be1a384](https://github.com/LindemannRock/craft-release-please-test/commit/be1a384423b7319ac0151dc4fd586460ffbce6fd))
+
+
+### Fixed
+
+* handle null input in greeter ([5b34d0a](https://github.com/LindemannRock/craft-release-please-test/commit/5b34d0a84bb0685b4c784601ec08a6fddb7984ea))
+
+
+### Security
+
+* patch XSS in greeter output ([fda934f](https://github.com/LindemannRock/craft-release-please-test/commit/fda934f02e640170bc04454ec26eb50814bf903c))
+
+
+### Changed
+
+* cache greeter lookup table ([c50c7b1](https://github.com/LindemannRock/craft-release-please-test/commit/c50c7b1650550f02971f38a968dca405f69a007a))
+
+
+### Reverted
+
+* roll back unused config helper ([e19591f](https://github.com/LindemannRock/craft-release-please-test/commit/e19591f67ea32d70402755f558608158799b0e37))
+
+## Release Notes for Release-Please Test
