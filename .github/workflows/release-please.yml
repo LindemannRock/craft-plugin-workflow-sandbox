@@ -35,16 +35,16 @@ jobs:
           # 1. Reformat dates: parens → hyphen (Craft Plugin Store requires this format)
           sed -i -E '/^## /s/ \(([0-9.-]+)\)$/ - \1/' CHANGELOG.md
 
-          # 2. Append [CRITICAL] if the top entry contains "Severity: critical" footer
-          TOP_ENTRY=$(awk '
-            /^## \[?[0-9]/ {
-              if (count == 0) { count = 1; next }
-              if (count == 1) exit
-            }
-            count == 1 { print }
-          ' CHANGELOG.md)
+          # 2. Append [CRITICAL] if any commit in this release window has "Severity: critical" footer.
+          # Release-please doesn't put commit bodies in CHANGELOG, so we scan git log directly.
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS_RANGE="${PREV_TAG}..HEAD"
+          else
+            COMMITS_RANGE="HEAD"
+          fi
 
-          if echo "$TOP_ENTRY" | grep -qi "Severity: critical" && ! head -20 CHANGELOG.md | grep -q '\[CRITICAL\]'; then
+          if git log $COMMITS_RANGE --pretty=format:'%B' | grep -qiE '^Severity:[[:space:]]*critical' && ! head -20 CHANGELOG.md | grep -q '\[CRITICAL\]'; then
             sed -i -E '0,/^(## .+ - [0-9.-]+)$/ s//\1 [CRITICAL]/' CHANGELOG.md
           fi
 
