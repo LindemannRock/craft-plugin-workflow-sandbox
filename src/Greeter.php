@@ -11,6 +11,6 @@ class Greeter
 
     public function releaseLine(): string
     {
-        return 'main';
+        return 'craft-5';
     }
 }
