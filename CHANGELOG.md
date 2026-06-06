@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.1](https://github.com/LindemannRock/craft-release-please-test/compare/v4.0.0...v4.0.1) (2026-06-06)
+
+
+### Fixed
+
+* exercise Craft 4 maintenance release line ([550717d](https://github.com/LindemannRock/craft-release-please-test/commit/550717dd85f2ba9edd8d98fa7e729f366371976a))
+
 ## [1.2.1](https://github.com/LindemannRock/craft-release-please-test/compare/v1.2.0...v1.2.1) - 2026-05-22
 
 
