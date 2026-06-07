@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  scripts/test-craft-compat <craft-constraint> [plugin-version] [--install] [--php-version <version>] [--allow-insecure-floor]
+
+Examples:
+  scripts/test-craft-compat '^5.10'
+  scripts/test-craft-compat '^5.10' dev-main
+  scripts/test-craft-compat '^5.10' dev-main --install
+  scripts/test-craft-compat '^5.10' dev-main --install --php-version 8.3
+  scripts/test-craft-compat '5.10.0' dev-main --allow-insecure-floor
+
+What it does:
+  1. Creates a disposable Craft project under /tmp.
+  2. Pins craftcms/cms to the requested constraint.
+  3. Installs this plugin through a local Composer path repository.
+  4. Optionally starts DDEV and installs Craft + the plugin.
+
+The default mode validates Composer installability only. Use --install for the
+full fresh-install smoke test.
+
+Composer platform PHP is pinned to the selected PHP version so dependency
+resolution matches the DDEV runtime. The default PHP version is 8.3.
+
+Use --allow-insecure-floor only for historical floor checks where Composer
+blocks an older Craft/dependency patch release because of security advisories.
+Normal release checks should use the latest patch in the supported minor.
+USAGE
+}
+
+if [[ $# -lt 1 || "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  usage
+  exit 0
+fi
+
+CRAFT_CONSTRAINT="$1"
+PLUGIN_VERSION="dev-main"
+INSTALL_MODE=false
+ALLOW_INSECURE_FLOOR=false
+PHP_VERSION="8.3"
+
+shift
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --install)
+      INSTALL_MODE=true
+      ;;
+    --allow-insecure-floor)
+      ALLOW_INSECURE_FLOOR=true
+      ;;
+    --php-version)
+      if [[ -z "${2:-}" ]]; then
+        echo "--php-version requires a value, such as 8.3" >&2
+        exit 1
+      fi
+      PHP_VERSION="$2"
+      shift
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    --*)
+      echo "Unknown option: $1" >&2
+      usage
+      exit 1
+      ;;
+    *)
+      PLUGIN_VERSION="$1"
+      ;;
+  esac
+
+  shift
+done
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PLUGIN_NAME="lindemannrock/craft-release-please-test"
+PLUGIN_HANDLE="release-please-test"
+
+STAMP="$(date +%Y%m%d%H%M%S)"
+SAFE_CONSTRAINT="$(printf '%s' "$CRAFT_CONSTRAINT" | tr -c '[:alnum:]' '-')"
+PROJECT_DIR="/tmp/craft-compat-${PLUGIN_HANDLE}-${SAFE_CONSTRAINT}-${STAMP}"
+
+echo "Creating disposable Craft project: $PROJECT_DIR"
+composer create-project craftcms/craft "$PROJECT_DIR" --no-interaction --no-scripts --quiet
+
+cd "$PROJECT_DIR"
+
+if [[ "$ALLOW_INSECURE_FLOOR" == true ]]; then
+  echo "Disabling Composer advisory blocking for historical floor validation"
+  composer config --json policy.advisories.block false
+fi
+
+echo "Pinning Composer platform PHP to $PHP_VERSION.0"
+composer config platform.php "$PHP_VERSION.0"
+
+echo "Pinning craftcms/cms to $CRAFT_CONSTRAINT"
+composer require "craftcms/cms:$CRAFT_CONSTRAINT" --no-interaction --no-scripts --update-with-all-dependencies
+
+echo "Configuring local path repository for $PLUGIN_NAME"
+composer config --json repositories.release-please-test "{\"type\":\"path\",\"url\":\"$PLUGIN_DIR\",\"options\":{\"symlink\":false,\"versions\":{\"$PLUGIN_NAME\":\"$PLUGIN_VERSION\"}}}"
+composer config minimum-stability dev
+composer config prefer-stable true
+
+echo "Installing $PLUGIN_NAME:$PLUGIN_VERSION"
+composer require "$PLUGIN_NAME:$PLUGIN_VERSION" --no-interaction --no-scripts --update-with-all-dependencies
+
+echo "Resolved versions:"
+composer show craftcms/cms --no-ansi
+composer show "$PLUGIN_NAME" --no-ansi
+
+if [[ "$INSTALL_MODE" != true ]]; then
+  echo "Composer compatibility check passed."
+  echo "Project left at: $PROJECT_DIR"
+  exit 0
+fi
+
+if ! command -v ddev >/dev/null 2>&1; then
+  echo "DDEV is required for --install mode." >&2
+  exit 1
+fi
+
+echo "Starting DDEV fresh-install smoke test"
+ddev config --project-type=craftcms --docroot=web --php-version="$PHP_VERSION" --database=mysql:8.0 --auto >/dev/null
+ddev start
+
+ddev craft install \
+  --interactive=0 \
+  --username=admin \
+  --password=password \
+  --email=test@example.com \
+  --site-name="Craft Compat ${PLUGIN_HANDLE}" \
+  --site-url='$DDEV_PRIMARY_URL'
+
+ddev craft plugin/install "$PLUGIN_HANDLE"
+PLUGIN_LIST="$(ddev craft plugin/list)"
+echo "$PLUGIN_LIST"
+
+if ! grep -Eq "[[:space:]]$PLUGIN_HANDLE[[:space:]].*[[:space:]]Yes[[:space:]]+Yes" <<<"$PLUGIN_LIST"; then
+  echo "Plugin $PLUGIN_HANDLE was not installed and enabled successfully." >&2
+  exit 1
+fi
+
+echo "Fresh-install compatibility check passed."
+echo "Project left at: $PROJECT_DIR"

@@ -34,7 +34,7 @@ The workflow must:
 
 ## Branch Protection
 
-The test repo uses the `CI / static-analysis` repository ruleset for active
+The test repo uses the `CI / quality-gates` repository ruleset for active
 release branches:
 
 ```text
@@ -49,19 +49,19 @@ Rules:
 
 - block branch deletion;
 - block non-fast-forward updates;
-- require the `static-analysis` status check;
+- require the `quality-gates` status check;
 - no bypass actors.
 
 Verified on 2026-06-06:
 
 | Test | Result |
 | --- | --- |
-| Direct push to protected `main` | Rejected with missing `static-analysis`. |
-| PR `#16` into `main` with passing `static-analysis` | Merge allowed. |
-| PR `#17` into `main` with failing `static-analysis` | Merge blocked by branch policy. |
+| Direct push to protected `main` | Rejected with missing `quality-gates`. |
+| PR `#16` into `main` with passing `quality-gates` | Merge allowed. |
+| PR `#17` into `main` with failing `quality-gates` | Merge blocked by branch policy. |
 
 This confirms the required day-to-day flow: push work to a short-lived branch,
-open a PR into the target release branch, wait for `static-analysis`, then merge.
+open a PR into the target release branch, wait for `quality-gates`, then merge.
 
 ## Version Baselines
 

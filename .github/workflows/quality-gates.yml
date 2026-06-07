@@ -1,4 +1,4 @@
-name: static-analysis
+name: quality-gates
 
 on:
   pull_request:
@@ -17,10 +17,25 @@ on:
       - craft-6-beta
 
 jobs:
-  static-analysis:
+  quality-gates:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          composer-options: --prefer-dist
+
+      - name: Composer security audit
+        run: composer audit
 
       - name: Validate Composer metadata
         run: composer validate --no-check-publish

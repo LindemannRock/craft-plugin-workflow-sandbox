@@ -8,6 +8,8 @@ Throwaway plugin for verifying:
 4. **SECURITY.md** + `.gitattributes` export-ignore patterns
 5. **Branch-specific release lines** for `main`, `craft-4`, `craft-6`,
    `craft-6-alpha`, and `craft-6-beta`
+6. **Craft compatibility floor validation** using a disposable Craft install
+   created by `scripts/test-craft-compat`
 
 This plugin is not intended for distribution. Do not list on the Plugin Store.
 
@@ -28,6 +30,21 @@ Then enable **Settings → Security → "Enable private vulnerability reporting"
 ## Testing recipe
 
 For branch release testing, start with [`BRANCH_RELEASE_TESTS.md`](BRANCH_RELEASE_TESTS.md).
+
+For Craft compatibility floor testing, start with:
+
+```bash
+cd plugins/release-please-test
+scripts/test-craft-compat '^5.10'
+scripts/test-craft-compat '^5.10' dev-main --install
+scripts/test-craft-compat '^5.10' dev-main --install --php-version 8.3
+scripts/test-craft-compat '5.10.0' dev-main --allow-insecure-floor
+```
+
+Use the exact-version form only to probe a historical floor. Normal release
+checks should use the latest secure patch in the supported Craft minor. The
+script pins Composer's platform PHP to the selected DDEV PHP version so the
+dependency set matches the runtime.
 
 Push commits in this order to verify every section + version-bump behaviour:
 
