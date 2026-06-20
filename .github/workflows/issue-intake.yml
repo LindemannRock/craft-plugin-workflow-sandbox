@@ -75,67 +75,82 @@ jobs:
             const major = versionMatch ? Number(versionMatch[1]) : null;
             const prerelease = pluginVersion.includes('-') ? pluginVersion.split('-')[1].toLowerCase() : '';
 
-            const familyOverride = (body.match(/compatibility family:\s*(formie|freeform)/i) || [])[1]?.toLowerCase();
+            const familyOverride = (
+              body.match(/(?:product|compatibility|line) family:\s*(formie|freeform)/i) || []
+            )[1]?.toLowerCase();
             const family = familyOverride
               || (repo.includes('formie') ? 'formie' : null)
               || (repo.includes('freeform') ? 'freeform' : null);
 
-            const labelsToAdd = [];
-
-            if (![...existingLabels].some((label) => label.startsWith('branch: '))) {
+            const classifyBranchAndLine = () => {
               if (family === 'formie') {
                 if (major === 3 && !prerelease) {
-                  labelsToAdd.push('branch: main');
-                } else if (major === 3) {
-                  labelsToAdd.push('branch: formie-3');
-                } else if (major === 4 && prerelease.includes('beta')) {
-                  labelsToAdd.push('branch: formie-4-beta');
-                } else if (major === 4) {
-                  labelsToAdd.push('branch: formie-4');
-                } else {
-                  labelsToAdd.push('branch: unsure');
+                  return ['branch: main', 'line: formie-3'];
                 }
-              } else if (family === 'freeform') {
+
+                if (major === 3) {
+                  return ['branch: formie-3', 'line: formie-3'];
+                }
+
+                if (major === 4 && prerelease.includes('beta')) {
+                  return ['branch: formie-4-beta', 'line: formie-4-beta'];
+                }
+
+                if (major === 4) {
+                  return ['branch: main', 'line: formie-4'];
+                }
+
+                return ['branch: unsure', 'line: unsure'];
+              }
+
+              if (family === 'freeform') {
                 if (major === 5 && !prerelease) {
-                  labelsToAdd.push('branch: main');
-                } else if (major === 5) {
-                  labelsToAdd.push('branch: freeform-5');
-                } else if (major === 6 && prerelease.includes('beta')) {
-                  labelsToAdd.push('branch: freeform-6-beta');
-                } else if (major === 6) {
-                  labelsToAdd.push('branch: freeform-6');
-                } else {
-                  labelsToAdd.push('branch: unsure');
+                  return ['branch: main', 'line: freeform-5'];
                 }
-              } else if (prerelease.includes('alpha')) {
-                labelsToAdd.push('branch: craft-6-alpha');
-              } else if (prerelease.includes('beta')) {
-                labelsToAdd.push('branch: craft-6-beta');
-              } else if (pluginVersion) {
-                labelsToAdd.push('branch: main');
-              } else {
-                labelsToAdd.push('branch: unsure');
+
+                if (major === 5) {
+                  return ['branch: freeform-5', 'line: freeform-5'];
+                }
+
+                if (major === 6 && prerelease.includes('beta')) {
+                  return ['branch: freeform-6-beta', 'line: freeform-6-beta'];
+                }
+
+                if (major === 6) {
+                  return ['branch: main', 'line: freeform-6'];
+                }
+
+                return ['branch: unsure', 'line: unsure'];
               }
+
+              if (major === 6 && prerelease.includes('alpha')) {
+                return ['branch: craft-6-alpha', 'line: craft-6-alpha'];
+              }
+
+              if (major === 6 && prerelease.includes('beta')) {
+                return ['branch: craft-6-beta', 'line: craft-6-beta'];
+              }
+
+              if (major === 6) {
+                return ['branch: main', 'line: craft-6'];
+              }
+
+              if (major === 5 || pluginVersion) {
+                return ['branch: main', 'line: craft-5'];
+              }
+
+              return ['branch: unsure', 'line: unsure'];
+            };
+
+            const labelsToAdd = [];
+            const [branchLabel, lineLabel] = classifyBranchAndLine();
+
+            if (![...existingLabels].some((label) => label.startsWith('branch: '))) {
+              labelsToAdd.push(branchLabel);
             }
 
-            if (family === 'formie' && ![...existingLabels].some((label) => label.startsWith('compat: formie-'))) {
-              if (major === 3) {
-                labelsToAdd.push('compat: formie-3');
-              } else if (major === 4 && prerelease.includes('beta')) {
-                labelsToAdd.push('compat: formie-4-beta');
-              } else if (major === 4) {
-                labelsToAdd.push('compat: formie-4');
-              }
-            }
-
-            if (family === 'freeform' && ![...existingLabels].some((label) => label.startsWith('compat: freeform-'))) {
-              if (major === 5) {
-                labelsToAdd.push('compat: freeform-5');
-              } else if (major === 6 && prerelease.includes('beta')) {
-                labelsToAdd.push('compat: freeform-6-beta');
-              } else if (major === 6) {
-                labelsToAdd.push('compat: freeform-6');
-              }
+            if (![...existingLabels].some((label) => label.startsWith('line: '))) {
+              labelsToAdd.push(lineLabel);
             }
 
             await addLabels(labelsToAdd);
