@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.0-alpha.3](https://github.com/LindemannRock/craft-release-please-test/compare/v6.0.0-alpha.2...v6.0.0-alpha.3) - 2026-06-19
+
+
+### Fixed
+
+* trigger Craft 6 alpha release test ([3d84639](https://github.com/LindemannRock/craft-release-please-test/commit/3d84639f5edf546dfa012f8fb0c5d7ca29a52622))
+
 ## [6.0.0-alpha.2](https://github.com/LindemannRock/craft-release-please-test/compare/v6.0.0-alpha.1...v6.0.0-alpha.2) - 2026-06-06
 
 
