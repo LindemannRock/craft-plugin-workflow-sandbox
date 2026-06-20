@@ -83,8 +83,30 @@ jobs:
             const labelsToAdd = [];
 
             if (![...existingLabels].some((label) => label.startsWith('branch: '))) {
-              if (family === 'formie' || family === 'freeform') {
-                labelsToAdd.push(prerelease ? 'branch: unsure' : 'branch: main');
+              if (family === 'formie') {
+                if (major === 3 && !prerelease) {
+                  labelsToAdd.push('branch: main');
+                } else if (major === 3) {
+                  labelsToAdd.push('branch: formie-3');
+                } else if (major === 4 && prerelease.includes('beta')) {
+                  labelsToAdd.push('branch: formie-4-beta');
+                } else if (major === 4) {
+                  labelsToAdd.push('branch: formie-4');
+                } else {
+                  labelsToAdd.push('branch: unsure');
+                }
+              } else if (family === 'freeform') {
+                if (major === 5 && !prerelease) {
+                  labelsToAdd.push('branch: main');
+                } else if (major === 5) {
+                  labelsToAdd.push('branch: freeform-5');
+                } else if (major === 6 && prerelease.includes('beta')) {
+                  labelsToAdd.push('branch: freeform-6-beta');
+                } else if (major === 6) {
+                  labelsToAdd.push('branch: freeform-6');
+                } else {
+                  labelsToAdd.push('branch: unsure');
+                }
               } else if (prerelease.includes('alpha')) {
                 labelsToAdd.push('branch: craft-6-alpha');
               } else if (prerelease.includes('beta')) {
